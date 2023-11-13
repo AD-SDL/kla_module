@@ -6,10 +6,9 @@ import requests
 
 class KLADriver():
 
-    def __init__(self,hostname:str = "127.0.0.1", port:int = 8000) -> None:
+    def __init__(self,hostname:str = "127.0.0.1") -> None:
         """Constructor for KLA driver class"""
         self.host = hostname  
-        self.port = port
 
     def connect(self):
         pass
@@ -17,6 +16,9 @@ class KLADriver():
     def disconnect(self):
         pass
     
+    def send_request(self):
+        pass
+
     def check_status(self):
         pass
 
@@ -31,6 +33,6 @@ class KLADriver():
 
 if __name__ == "__main__":
 
-    kla = KLADriver(hostname = "127.0.0.1", port = 8000)
+    kla = KLADriver(hostname = "127.0.0.1")
 
     
