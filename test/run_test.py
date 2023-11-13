@@ -7,9 +7,9 @@ from wei import ExperimentClient
 
 def main():
     # The path to the Workflow definition yaml file
-    wf_path = Path("./test_tecan_workflow.yaml")
+    wf_path = Path("./test_kla_workflow.yaml")
     # This defines the Experiment object that will communicate with the server for workflows
-    exp = ExperimentClient("127.0.0.1", "8000", "Test_Tecan_Application")
+    exp = ExperimentClient("127.0.0.1", "8000", "Test_KLA_Application")
     # This initializes the connection to the server and the logs for this run of the program.
     exp.register_exp()
     # This runs the workflow and returns once the workflow is complete
