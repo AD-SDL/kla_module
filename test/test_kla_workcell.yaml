@@ -11,7 +11,7 @@ config:
 
 #List of all components accessible in this workcell
 modules:
-  - name: kla
+  - name: KLA
     model: kla_node
     interface: wei_rest_node
     config:
