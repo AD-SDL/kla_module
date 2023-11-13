@@ -5,29 +5,29 @@ metadata:
   version: 0.1
 
 modules:
-  - name: tecan
+  - name: KLA
 
 flowdef:
-  - name: Open Tecan
-    module: tecan
-    action: open_gate
+  - name: Open KLA
+    module: KLA
+    action: load_protocol
     args:
       protocol_file_path: ../README.md
     checks: null
-    comment: Open Tecan
+    comment: Open KLA
 
-  - name: Close Tecan
-    module: tecan
-    action: close_gate
+  - name: Close KLA
+    module: KLA
+    action: run_protocol
     args:
-      protocol_file_path: ../README.md
+      {}
     checks: null
-    comment: Close Tecan
+    comment: Close KLA
 
-  - name: Run Tecan
-    module: tecan
-    action: run_tecan
+  - name: Run KLA
+    module: KLA
+    action: get_output_file
     args:
-      tecan_iteration: 1
+      {}
     checks: null
-    comment: Run Tecan
+    comment: Run KLA
