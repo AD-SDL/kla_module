@@ -8,26 +8,26 @@ modules:
   - name: KLA
 
 flowdef:
-  - name: Open KLA
+  - name: Load KLA protocol
     module: KLA
     action: load_protocol
     args:
       protocol_file_path: ../README.md
     checks: null
-    comment: Open KLA
+    comment: Load KLA protocol
 
-  - name: Close KLA
+  - name: Run KLA protocol
     module: KLA
     action: run_protocol
     args:
       {}
     checks: null
-    comment: Close KLA
+    comment: Run KLA protocol
 
-  - name: Run KLA
+  - name: Get Output KLA
     module: KLA
     action: get_output_file
     args:
       {}
     checks: null
-    comment: Run KLA
+    comment: Get KLA output file
