@@ -18,7 +18,9 @@ class KLADriver():
     def disconnect(self):
         pass
     
-    def send_request(self):
+    def send_request(self, request_type):
+        r = requests.post(serverURI, json=myRequest,headers={"Connection": "close"})
+
         pass
 
     def check_status(self):
