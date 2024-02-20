@@ -38,7 +38,7 @@ class KLADriver():
             print(err)
         # else:
 
-    def send_protocol(self, message:str = None, request_type:int = None, status:int = 0, protocol_file_list:list = None):
+    def run_protocol(self, message:str = None, request_type:int = None, status:int = 0, protocol_file_list:list = None):
         """Creates the request data
         Parameters
         ----------
@@ -88,6 +88,6 @@ if __name__ == "__main__":
     GetAtLoadSample = 12
     protocols = ["C:\\Users\\Public\\Documents\\Nanomechanics\\Profiles\\Default\\Make Indents.NMPROJ"]
 
-    response_text = kla.send_protocol(message="Test",request_type=RunBatch,protocol_file_list=protocols)
+    response_text = kla.run_protocol(message="Test",request_type=RunBatch,protocol_file_list=protocols)
 
     print(response_text)
