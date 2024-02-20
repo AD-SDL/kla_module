@@ -4,24 +4,49 @@ import time
 import csv
 
 import requests
-import serial
 class KLADriver():
 
-    def __init__(self, hostname:str = "192.168.243.254", port:int = 8000) -> None:
+    def __init__(self, hostname:str = "192.168.243.254") -> None:
         """Constructor for KLA driver class"""
         self.host = hostname  
-        self.port = port 
+        self.server_uri = "http://{}".format(self.host)
 
-    def connect(self):
-        pass
+    def send_request(self, request_data:dict = None):
+        """Attemps to send a HTTPS request with the request data
+        Parameters
+        ----------
+        request_data : dict
+           A dictionary that contains request data
 
-    def disconnect(self):
-        pass
-    
-    def send_request(self, request_type):
-        r = requests.post(serverURI, json=myRequest,headers={"Connection": "close"})
+        Returns
+        -------
+        HTTPS response text
+        """
+        try:
+            response = requests.post(self.server_uri, json=request_data, headers={"Connection": "close"})
+            return response.text
 
-        pass
+        except requests.ConnectionError as connection_err:
+            print(connection_err)
+        except requests.ConnectTimeout as timeout:
+            print(timeout)
+        except requests.HTTPError as http_err:
+            print(http_err)
+        except requests.JSONDecodeError as json_err:
+            print(json_err)
+        except ValueError as err:
+            print(err)
+        # else:
+
+    def send_protocol(self, message:str = None, request_type:int = None, status:int = 0, protocol_file_list:str = None):
+
+        data = {
+            "Message": message,
+            "RequestType": request_type,
+            "Status": status,
+            "Args": protocol_file_list
+        }
+        return self.send_request(request_data=data)
 
     def check_status(self):
         pass
@@ -29,31 +54,22 @@ class KLADriver():
     def load_protocol(self):
         pass
 
-    def run_protocol(self):
-        pass
-
     def get_output_file(self):
         pass
 
+
+# Usage example:
 if __name__ == "__main__":
+    server_ip = "http://192.168.243.254"
+    kla = KLADriver(hostname=server_ip)
 
-    kla = KLADriver(hostname = "127.0.0.1")
+    RunBatch = 1
+    GetSampleRunningState = 2
+    GoToLoadSample = 4
+    Echo = 8
+    GetAtLoadSample = 12
+    protocols = ["C:\\Users\\Public\\Documents\\Nanomechanics\\Profiles\\Default\\Make Indents.NMPROJ"]
 
-    
+    response_text = kla.send_protocol(message="Test",request_type=RunBatch,protocol_file_list=protocols)
 
-serverURI = "192.168.243.254" #'http://146.139.48.22:8000'
-# Possible RequestTypes
-RunBatch = 1
-GetSampleRunningState = 2
-GoToLoadSample = 4
-Echo = 8
-GetAtLoadSample = 12
-# set RequestType
-requestType = RunBatch
-# Create JSON for RunBatch which requires an argument
-if requestType == RunBatch:
-    myRequest = {"Message": "", "RequestType": RunBatch, "Status":0, "Args" : ["C:\\Users\\Public\\Documents\\Nanomechanics\\Profiles\\Default\\Make Indents.NMPROJ"]}
-else: # Create JSON for requests which do not require an argument
-    myRequest = {"Message":"TEST-ANL-STS","RequestType":requestType,"Status":0,"Args":[]}
-r = requests.post(serverURI, json=myRequest,headers={"Connection": "close"})
-print(r.text)
+    print(response_text)
