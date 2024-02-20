@@ -38,14 +38,12 @@ class KLADriver():
             print(err)
         # else:
 
-    def run_protocol(self, message:str = None, request_type:int = None, status:int = 0, protocol_file_list:list = None):
+    def run_protocol(self, message:str = None, status:int = 0, protocol_file_list:list = None):
         """Creates the request data
         Parameters
         ----------
         message: str
            A comment message (optional)
-        request_type: int
-            Message type indicator
         status int:
             Status indicator
         protocol_file_list:list
@@ -60,7 +58,7 @@ class KLADriver():
 
         data = {
             "Message": message,
-            "RequestType": request_type,
+            "RequestType": 1,
             "Status": status,
             "Args": protocol_file_list
         }
@@ -69,9 +67,32 @@ class KLADriver():
     def check_status(self):
         pass
 
-    def load_protocol(self):
-        pass
+    def load_protocol(self, message:str = None, status:int = 0, protocol_file_list:list = None):
+        """Creates the request data
+        Parameters
+        ----------
+        message: str
+           A comment message (optional)
+        status int:
+            Status indicator
+        protocol_file_list:list
+            A list of protocol file paths
 
+        Returns
+        -------
+        HTTPS response text
+        """
+        if not protocol_file_list:
+            raise ValueError("Protocol file list was not provided!")
+
+        data = {
+            "Message": message,
+            "RequestType": 4,
+            "Status": status,
+            "Args": protocol_file_list
+        }
+        return self.send_request(request_data=data)
+    
     def get_output_file(self):
         pass
 
