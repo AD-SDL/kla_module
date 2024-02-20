@@ -1,7 +1,5 @@
 fastapi
 requests
 uvicorn
-wmi
-pypiwin32
-watchdog
+
 
