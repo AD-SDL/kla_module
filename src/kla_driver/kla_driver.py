@@ -6,10 +6,10 @@ import csv
 import requests
 class KLADriver():
 
-    def __init__(self, hostname:str = "192.168.243.254") -> None:
+    def __init__(self, url:str = "http://127.0.0.1:8080") -> None:
         """Constructor for KLA driver class"""
-        self.host = hostname  
-        self.server_uri = "http://{}".format(self.host)
+     
+        self.server_url = url
 
     def send_request(self, request_data:dict = None):
         """Attemps to send a HTTPS request with the request data
@@ -23,7 +23,7 @@ class KLADriver():
         HTTPS response text
         """
         try:
-            response = requests.post(self.server_uri, json=request_data, headers={"Connection": "close"})
+            response = requests.post(self.server_url, json=request_data, headers={"Connection": "close"})
             return response.text
 
         except requests.ConnectionError as connection_err:
@@ -38,7 +38,7 @@ class KLADriver():
             print(err)
         # else:
 
-    def run_protocol(self, message:str = None, status:int = 0, protocol_file_list:list = None):
+    def run_protocol(self, message:str = None, request_type:int = 1, status:int = 0, protocol_file_list:list = None):
         """Creates the request data
         Parameters
         ----------
@@ -58,7 +58,7 @@ class KLADriver():
 
         data = {
             "Message": message,
-            "RequestType": 1,
+            "RequestType": request_type,
             "Status": status,
             "Args": protocol_file_list
         }
@@ -99,8 +99,8 @@ class KLADriver():
 
 # Usage example:
 if __name__ == "__main__":
-    server_ip = "http://192.168.243.254"
-    kla = KLADriver(hostname=server_ip)
+    kla_url = "http://127.0.0.1:8080"
+    kla = KLADriver(hostname=kla_url)
 
     RunBatch = 1
     GetSampleRunningState = 2
