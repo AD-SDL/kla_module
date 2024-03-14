@@ -155,7 +155,9 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP")
-    parser.add_argument("--port", type=str, default="5557", help="Port")
+    parser.add_argument("--port", type=str, default="3015", help="Port")
+    parser.add_argument("--kla_url", type=str, default="http://127.0.0.1:8080", help="URL for KLA")
+
     # Add any additional arguments here
     args = parser.parse_args()
 
