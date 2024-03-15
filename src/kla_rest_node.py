@@ -1,5 +1,5 @@
 import json
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +9,17 @@ from wei.core.data_classes import ModuleStatus, StepResponse, StepFileResponse, 
 import traceback
 
 from kla_driver.kla_driver import KLADriver
+
+
+def parse_args() -> Namespace:
+    """Parses the command line arguments for the KLA REST node"""
+
+    parser = ArgumentParser()
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP")
+    parser.add_argument("--port", type=str, default="3015", help="Port")
+    parser.add_argument("--kla_url", type=str, default="http://127.0.0.1:8080", help="URL for KLA")
+
+    return parser.parse_args()
 
 global state, module_resources
 
@@ -26,7 +37,8 @@ async def lifespan(app: FastAPI):
         None"""
     try:
         # Do any instrument configuration here
-        kla = KLADriver()
+        args = parse_args()
+        kla = KLADriver(url=args.kla_url)
         state = ModuleStatus.IDLE
         module_resources = []
     except Exception as err:
@@ -153,13 +165,8 @@ def do_action(
 if __name__ == "__main__":
     import uvicorn
 
-    parser = ArgumentParser()
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP")
-    parser.add_argument("--port", type=str, default="3015", help="Port")
-    parser.add_argument("--kla_url", type=str, default="http://127.0.0.1:8080", help="URL for KLA")
-
     # Add any additional arguments here
-    args = parser.parse_args()
+    args = parse_args()
 
     uvicorn.run(
         "kla_rest_node:app",
