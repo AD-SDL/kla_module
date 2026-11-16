@@ -1,176 +1,88 @@
-import json
-from argparse import ArgumentParser, Namespace
-from contextlib import asynccontextmanager
+"""MADSci REST node for the KLA Nanomechanics instrument."""
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from typing import Annotated, Optional
 
-from wei.core.data_classes import ModuleStatus, StepResponse, StepFileResponse, StepStatus
-import traceback
+from madsci.common.types.node_types import RestNodeConfig
+from madsci.node_module.helpers import action
+from madsci.node_module.rest_node_module import RestNode
+from pydantic import Field
 
 from kla_driver.kla_driver import KLADriver
 
 
-def parse_args() -> Namespace:
-    """Parses the command line arguments for the KLA REST node"""
+class KLANodeConfig(RestNodeConfig):
+    """Configuration for the KLA node module."""
 
-    parser = ArgumentParser()
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP")
-    parser.add_argument("--port", type=str, default="3015", help="Port")
-    parser.add_argument("--kla_url", type=str, default="http://127.0.0.1:8080", help="URL for KLA")
-
-    return parser.parse_args()
-
-global state, module_resources
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global kla, state, module_resources
-    """Initial run function for the KLA app, initializes the state
-        Parameters
-        ----------
-        app : FastApi
-           The REST API app being initialized
-
-        Returns
-        -------
-        None"""
-    try:
-        # Do any instrument configuration here
-        args = parse_args()
-        kla = KLADriver(url=args.kla_url)
-        state = ModuleStatus.IDLE
-        module_resources = []
-    except Exception as err:
-        print(err)
-        state = ModuleStatus.ERROR
-
-    # Yield control to the application
-    yield
-
-    # Do any cleanup here
-    pass
+    kla_url: str = Field(
+        default="http://127.0.0.1:8080",
+        description="URL of the KLA control server",
+    )
+    request_timeout: float = Field(
+        default=30.0,
+        gt=0,
+        description="Timeout in seconds for requests to the KLA control server",
+    )
 
 
-app = FastAPI(
-    lifespan=lifespan,
-)
+ProtocolFiles = Annotated[
+    list[str],
+    "Paths to protocol (.NMPROJ) files, as seen from the KLA control PC",
+]
+Message = Annotated[Optional[str], "Optional comment sent along with the request"]
 
 
-@app.get("/state")
-def get_state():
-    """Returns the current state of the module"""
-    global state
-    return JSONResponse(content={"State": state})
+class KLANode(RestNode):
+    """A node to control the KLA Nanomechanics instrument."""
 
+    kla: Optional[KLADriver] = None
+    config: KLANodeConfig = KLANodeConfig()
+    config_model = KLANodeConfig
+    module_version = "1.0.0"
 
-@app.get("/about")
-async def about():
-    """Returns a description of the actions and resources the module supports"""
-    global state
-    return JSONResponse(
-        content={
-            "name": "kla",
-            "model": "Unknown",
-            "version": "0.0.1",
-            "actions": {
-             "open_gate": "config : %s",
-             "close_gate": "config : %s",
-             "run_kla": "config : %s",
-             },
-            "repo": "https://github.com/AD-SDL/kla_module.git"
-            })
-
-@app.get("/resources")
-async def resources():
-    """Returns the current resources available to the module"""
-    global state, module_resources
-    resource_info = ""
-    if not (module_resources == ""):
-        with open(module_resources) as f:
-            resource_info = f.read()
-    return JSONResponse(content={"Resources": resource_info})
-
-
-@app.post("/action")
-def do_action(
-    action_handle: str,  # The action to be performed
-    action_vars: str,  # Any arguments necessary to run that action
-) -> StepResponse:
-    global kla, state
-    if state == ModuleStatus.BUSY:
-        return StepResponse(
-            action_response=StepStatus.FAILED,
-            action_msg="",
-            action_log="KLA is busy",
+    def startup_handler(self) -> None:
+        """Create the driver for the KLA control server."""
+        self.kla = KLADriver(
+            url=self.config.kla_url, timeout=self.config.request_timeout
         )
-    state = ModuleStatus.BUSY
-    action_args = json.loads(action_vars)
+        self.logger.log_info(f"KLA node connected to {self.config.kla_url}")
 
-    try:
-        if action_handle == "load_protocol":
+    def shutdown_handler(self) -> None:
+        """Release the driver."""
+        self.kla = None
 
-            result = kla.load_protocol()
+    def state_handler(self) -> None:
+        """Report the node's current state."""
+        self.node_state = {
+            "kla_url": self.config.kla_url,
+            "kla_interface_initialized": self.kla is not None,
+        }
 
-            state = ModuleStatus.IDLE
-            return StepResponse(
-                action_response=StepStatus.SUCCEEDED,
-                action_msg=result["action_msg"],
-                action_log=result["action_log"],
-            )
+    @action(
+        name="load_protocol",
+        description="Load protocol files and move the stage to the sample load position",
+    )
+    def load_protocol(
+        self, protocol_files: ProtocolFiles, message: Message = None
+    ) -> str:
+        """Load protocol files and move the stage to the sample load position."""
+        return self.kla.load_protocol(protocol_files, message=message)
 
-        elif action_handle == "run_protocol":
+    @action(name="run_protocol", description="Run a batch of protocol files")
+    def run_protocol(
+        self, protocol_files: ProtocolFiles, message: Message = None
+    ) -> str:
+        """Run a batch of protocol files."""
+        return self.kla.run_protocol(protocol_files, message=message)
 
-            result = kla.run_protocol()
-
-            state = ModuleStatus.IDLE
-            return StepResponse(
-                action_response=StepStatus.SUCCEEDED,
-                action_msg=result["action_msg"],
-                action_log=result["action_log"],
-            )
-
-        elif action_handle == "get_output_file":
-
-            result = kla.get_output_file()
-            
-            file_name = result["action_msg"]
-
-            state = ModuleStatus.IDLE
-            return StepFileResponse(
-                action_response=StepStatus.SUCCEEDED,
-                path=file_name,
-                action_log=result["action_log"],
-            )
-
-        else:
-            # Handle Unsupported actions
-            state = ModuleStatus.IDLE
-            return StepResponse(
-                action_response=StepStatus.FAILED,
-                action_msg="",
-                action_log="Unsupported action",
-            )
-    except Exception as e:
-        print(str(e))
-        print(traceback.format_exc())
-        state = ModuleStatus.IDLE
-        return StepResponse(
-            action_response=StepStatus.FAILED,
-            action_msg="",
-            action_log=str(e),
-        )
+    @action(
+        name="check_status",
+        description="Query whether a sample run is in progress",
+    )
+    def check_status(self) -> str:
+        """Query whether a sample run is in progress."""
+        return self.kla.check_status()
 
 
 if __name__ == "__main__":
-    import uvicorn
-
-    # Add any additional arguments here
-    args = parse_args()
-
-    uvicorn.run(
-        "kla_rest_node:app",
-        host=args.host,
-        port=int(args.port),
-        reload=True,
-    )
+    kla_node = KLANode()
+    kla_node.start_node()
