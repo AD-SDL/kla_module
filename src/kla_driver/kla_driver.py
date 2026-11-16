@@ -1,114 +1,90 @@
-import os
-import time
+"""Python driver for the KLA Nanomechanics HTTP control server."""
 
-import csv
+from enum import IntEnum
+from typing import Any, Optional
 
 import requests
-class KLADriver():
 
-    def __init__(self, url:str = "http://127.0.0.1:8080") -> None:
-        """Constructor for KLA driver class"""
-     
+
+class KLARequestType(IntEnum):
+    """Request types understood by the KLA control server."""
+
+    RUN_BATCH = 1
+    GET_SAMPLE_RUNNING_STATE = 2
+    GO_TO_LOAD_SAMPLE = 4
+    ECHO = 8
+    GET_AT_LOAD_SAMPLE = 12
+
+
+class KLADriver:
+    """Sends JSON requests to the KLA control server."""
+
+    def __init__(
+        self, url: str = "http://127.0.0.1:8080", timeout: float = 30.0
+    ) -> None:
+        """Constructor for KLA driver class."""
         self.server_url = url
+        self.timeout = timeout
 
-    def send_request(self, request_data:dict = None):
-        """Attemps to send a HTTPS request with the request data
-        Parameters
-        ----------
-        request_data : dict
-           A dictionary that contains request data
+    def send_request(
+        self,
+        request_type: KLARequestType,
+        args: Optional[list[str]] = None,
+        message: Optional[str] = None,
+        status: int = 0,
+    ) -> str:
+        """Send a request to the KLA server and return the response text.
 
-        Returns
-        -------
-        HTTPS response text
+        Raises a requests exception if the server can't be reached or returns
+        an HTTP error status.
         """
-        try:
-            response = requests.post(self.server_url, json=request_data, headers={"Connection": "close"})
-            return response.text
+        data: dict[str, Any] = {
+            "Message": message,
+            "RequestType": int(request_type),
+            "Status": status,
+            "Args": args or [],
+        }
+        response = requests.post(
+            self.server_url,
+            json=data,
+            headers={"Connection": "close"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        return response.text
 
-        except requests.ConnectionError as connection_err:
-            print(connection_err)
-        except requests.ConnectTimeout as timeout:
-            print(timeout)
-        except requests.HTTPError as http_err:
-            print(http_err)
-        except requests.JSONDecodeError as json_err:
-            print(json_err)
-        except ValueError as err:
-            print(err)
-        # else:
-
-    def run_protocol(self, message:str = None, request_type:int = 1, status:int = 0, protocol_file_list:list = None):
-        """Creates the request data
-        Parameters
-        ----------
-        message: str
-           A comment message (optional)
-        status int:
-            Status indicator
-        protocol_file_list:list
-            A list of protocol file paths
-
-        Returns
-        -------
-        HTTPS response text
-        """
+    def run_protocol(
+        self, protocol_file_list: list[str], message: Optional[str] = None
+    ) -> str:
+        """Run a batch of protocol (.NMPROJ) files."""
         if not protocol_file_list:
             raise ValueError("Protocol file list was not provided!")
+        return self.send_request(
+            KLARequestType.RUN_BATCH, args=protocol_file_list, message=message
+        )
 
-        data = {
-            "Message": message,
-            "RequestType": request_type,
-            "Status": status,
-            "Args": protocol_file_list
-        }
-        return self.send_request(request_data=data)
-
-    def check_status(self):
-        pass
-
-    def load_protocol(self, message:str = None, status:int = 0, protocol_file_list:list = None):
-        """Creates the request data
-        Parameters
-        ----------
-        message: str
-           A comment message (optional)
-        status int:
-            Status indicator
-        protocol_file_list:list
-            A list of protocol file paths
-
-        Returns
-        -------
-        HTTPS response text
-        """
+    def load_protocol(
+        self, protocol_file_list: list[str], message: Optional[str] = None
+    ) -> str:
+        """Load protocol files and move the stage to the sample load position."""
         if not protocol_file_list:
             raise ValueError("Protocol file list was not provided!")
+        return self.send_request(
+            KLARequestType.GO_TO_LOAD_SAMPLE, args=protocol_file_list, message=message
+        )
 
-        data = {
-            "Message": message,
-            "RequestType": 4,
-            "Status": status,
-            "Args": protocol_file_list
-        }
-        return self.send_request(request_data=data)
-    
-    def get_output_file(self):
-        pass
+    def check_status(self) -> str:
+        """Query whether a sample run is in progress."""
+        return self.send_request(KLARequestType.GET_SAMPLE_RUNNING_STATE)
+
+    def echo(self, message: str = "ping") -> str:
+        """Send an echo request, useful for checking connectivity."""
+        return self.send_request(KLARequestType.ECHO, message=message)
 
 
-# Usage example:
 if __name__ == "__main__":
-    kla_url = "http://127.0.0.1:8080"
-    kla = KLADriver(hostname=kla_url)
-
-    RunBatch = 1
-    GetSampleRunningState = 2
-    GoToLoadSample = 4
-    Echo = 8
-    GetAtLoadSample = 12
-    protocols = ["C:\\Users\\Public\\Documents\\Nanomechanics\\Profiles\\Default\\Make Indents.NMPROJ"]
-
-    response_text = kla.run_protocol(message="Test",request_type=RunBatch,protocol_file_list=protocols)
-
-    print(response_text)
+    kla = KLADriver(url="http://127.0.0.1:8080")
+    protocols = [
+        "C:\\Users\\Public\\Documents\\Nanomechanics\\Profiles\\Default\\Make Indents.NMPROJ"
+    ]
+    print(kla.run_protocol(protocols, message="Test"))  # noqa: T201

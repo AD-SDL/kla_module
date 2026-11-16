@@ -2,17 +2,16 @@ name: kla_module
 services:
   kla_module:
     container_name: kla_module
-    image: ${IMAGE}
+    image: ghcr.io/ad-sdl/kla_module
+    network_mode: host
     build:
       context: .
       dockerfile: Dockerfile
       tags:
-        - ${IMAGE}:latest
-        - ${IMAGE}:dev
-    command: python -m kla_rest_node --port 3015 --kla_url ${KLA_URL}
+        - ghcr.io/ad-sdl/kla_module:latest
+        - ghcr.io/ad-sdl/kla_module:dev
     env_file: .env
-    volumes:
-      - ./src:/home/app/kla_module/src
-      - ./tests:/home/app/kla_module/tests
-    ports:
-      - 3015:3015
+    environment:
+      - USER_ID=${USER_ID:-1000}
+      - GROUP_ID=${GROUP_ID:-1000}
+    command: python -m kla_rest_node --kla_url ${KLA_URL:-http://127.0.0.1:8080}

@@ -3,17 +3,16 @@ name: Pytest Unit Tests
 on: [push]
 
 jobs:
-  build_and_test:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout code
-      - name: Test makefile
-        run: make init .env
-      - name: Check .env file
-        run: cat .env
-      - name: Create paths
-        run: make paths
-      - name: Initialize, Build, and Test with Docker
-        run: make test
-        shell: bash
+      - uses: actions/setup-python@v5
+        name: Setup Python
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -e . pytest httpx
+      - name: Run tests
+        run: pytest

@@ -1,7 +1,7 @@
 [project]
 name = "kla_module"
-version = "0.2.0"
-description = "Software for automatting a KLA robot"
+version = "1.0.0"
+description = "Software for automating a KLA robot"
 authors = [
     {name = "Ryan D. Lewis", email="ryan.lewis@anl.gov"},
     {name = "Rafael Vescovi", email="ravescovi@anl.gov"},
@@ -11,15 +11,13 @@ authors = [
     {name = "Tobias Ginsburg", email = "tginsburg@anl.gov"},
 ]
 dependencies = [
-    "ad_sdl.wei>=0.5.3",
-    "fastapi>=0.103.2",
-    "uvicorn>=0.21.1",
-    "pytest",
+    "madsci.node_module~=0.8.0",
+    "madsci.client~=0.8.0",
+    "madsci.common~=0.8.0",
     "requests",
-
 ]
 
-requires-python = ">=3.8.1"
+requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "MIT"}
 
@@ -32,6 +30,14 @@ homepage = "https://github.com/AD-SDL/kla_module"
 [build-system]
 requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+    "ruff>=0.11.7",
+    "pytest",
+    "httpx",
+]
 
 #####################
 # Development Tools #
@@ -70,8 +76,8 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-# Assume Python 3.8
-target-version = "py38"
+# Assume Python 3.10
+target-version = "py310"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -123,10 +129,11 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/stable/customize.html
 addopts = "-x"
+testpaths = ["tests"]
+pythonpath = ["src"]
 junit_family="xunit1"
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::pottery.exceptions.InefficientAccessWarning",
 ]
 markers = [
     "hardware: marks test as requiring hardware (deselect with '-m \"not hardware\"')",
